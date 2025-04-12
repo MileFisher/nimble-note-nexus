@@ -24,9 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { X, PlusCircle, Trash, Palette, Tag, Pin, Image } from 'lucide-react';
+import { X, PlusCircle, Trash, Palette, Tag, Pin, Image, Share2 } from 'lucide-react';
 import { useNotes } from '@/context/NotesContext';
 import { useToast } from '@/hooks/use-toast';
+import ShareNoteDialog from './ShareNoteDialog';
 
 interface NoteEditorProps {
   note?: Note;
@@ -43,7 +44,7 @@ const COLORS = [
 ];
 
 const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
-  const { addNote, updateNote, deleteNote, togglePin, labels } = useNotes();
+  const { addNote, updateNote, deleteNote, togglePin, labels, shareNote, removeSharedUser } = useNotes();
   const { toast } = useToast();
   
   const [title, setTitle] = useState(note?.title || '');
@@ -52,6 +53,7 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>(note?.labelIds || []);
   const [isPinned, setIsPinned] = useState(note?.isPinned || false);
   const [images, setImages] = useState<string[]>(note?.images || []);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -192,198 +194,231 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
   const handleRemoveImage = (imageToRemove: string) => {
     setImages(images.filter(image => image !== imageToRemove));
   };
+
+  const handleShareNote = (noteId: string, email: string, permission: 'read' | 'edit') => {
+    shareNote(noteId, email, permission);
+  };
+
+  const handleRemoveSharedUser = (noteId: string, userId: string) => {
+    removeSharedUser(noteId, userId);
+  };
   
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden" style={{ backgroundColor: color }}>
-        <div className="p-4 space-y-4">
-          {/* Title input */}
-          <Input
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            className="text-lg font-medium bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-          />
-          
-          {/* Content textarea */}
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Take a note..."
-            className="min-h-[200px] resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-          />
-          
-          {/* Attached images */}
-          {images.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {images.map((image, index) => (
-                <div key={index} className="relative group">
-                  <img 
-                    src={image} 
-                    alt="Note attachment" 
-                    className="h-20 w-20 object-cover rounded-md"
-                  />
-                  <button
-                    onClick={() => handleRemoveImage(image)}
-                    className="absolute top-1 right-1 bg-foreground/30 hover:bg-foreground/50 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3 text-background" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Selected labels */}
-          {selectedLabelIds.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {selectedLabelIds.map((labelId) => {
-                const label = labels.find((l) => l.id === labelId);
-                if (!label) return null;
-                return (
-                  <Badge key={labelId} variant="secondary" className="px-2 py-1">
-                    {label.name}
-                    <button
-                      onClick={() => handleLabelToggle(labelId)}
-                      className="ml-1 rounded-full hover:bg-muted/20"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        
-        {/* Actions footer */}
-        <div className="flex items-center justify-between p-2 border-t bg-muted/20">
-          <div className="flex items-center gap-1">
-            {/* Color picker */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <div className="grid grid-cols-3 gap-1 p-1">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c.value}
-                      onClick={() => setColor(c.value)}
-                      className="h-8 w-8 rounded-full cursor-pointer border border-border hover:scale-110 transition-transform"
-                      style={{ backgroundColor: c.value }}
-                      title={c.name}
-                    >
-                      {color === c.value && (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="h-2 w-2 rounded-full bg-foreground" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+    <>
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden" style={{ backgroundColor: color }}>
+          <div className="p-4 space-y-4">
+            {/* Title input */}
+            <Input
+              ref={titleRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title"
+              className="text-lg font-medium bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+            />
             
-            {/* Image upload button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 p-2 rounded-full"
-              onClick={() => fileInputRef.current?.click()}
-              title="Attach image"
-            >
-              <Image className="h-4 w-4" />
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                multiple
-                className="hidden"
-              />
-            </Button>
+            {/* Content textarea */}
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Take a note..."
+              className="min-h-[200px] resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+            />
             
-            {/* Labels dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 p-2 rounded-full">
-                  <Tag className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <div className="font-medium text-sm px-2 py-1.5">Labels</div>
-                {labels.length === 0 ? (
-                  <div className="px-2 py-4 text-center text-muted-foreground">
-                    No labels yet
+            {/* Attached images */}
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {images.map((image, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={image} 
+                      alt="Note attachment" 
+                      className="h-20 w-20 object-cover rounded-md"
+                    />
+                    <button
+                      onClick={() => handleRemoveImage(image)}
+                      className="absolute top-1 right-1 bg-foreground/30 hover:bg-foreground/50 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3 text-background" />
+                    </button>
                   </div>
-                ) : (
-                  labels.map((label) => (
-                    <DropdownMenuCheckboxItem
-                      key={label.id}
-                      checked={selectedLabelIds.includes(label.id)}
-                      onCheckedChange={() => handleLabelToggle(label.id)}
-                    >
+                ))}
+              </div>
+            )}
+            
+            {/* Selected labels */}
+            {selectedLabelIds.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {selectedLabelIds.map((labelId) => {
+                  const label = labels.find((l) => l.id === labelId);
+                  if (!label) return null;
+                  return (
+                    <Badge key={labelId} variant="secondary" className="px-2 py-1">
                       {label.name}
-                    </DropdownMenuCheckboxItem>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Pin button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full"
-              onClick={handleTogglePin}
-            >
-              <Pin className={`h-4 w-4 ${isPinned ? 'fill-primary' : ''}`} />
-            </Button>
-            
-            {/* Delete button (only for existing notes) */}
-            {note && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-full text-destructive"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-                
-                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Note</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this note? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
+                      <button
+                        onClick={() => handleLabelToggle(labelId)}
+                        className="ml-1 rounded-full hover:bg-muted/20"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
             )}
           </div>
           
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleSave}
-          >
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* Actions footer */}
+          <div className="flex items-center justify-between p-2 border-t bg-muted/20">
+            <div className="flex items-center gap-1">
+              {/* Color picker */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                    <Palette className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <div className="grid grid-cols-3 gap-1 p-1">
+                    {COLORS.map((c) => (
+                      <button
+                        key={c.value}
+                        onClick={() => setColor(c.value)}
+                        className="h-8 w-8 rounded-full cursor-pointer border border-border hover:scale-110 transition-transform"
+                        style={{ backgroundColor: c.value }}
+                        title={c.name}
+                      >
+                        {color === c.value && (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="h-2 w-2 rounded-full bg-foreground" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Image upload button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 p-2 rounded-full"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach image"
+              >
+                <Image className="h-4 w-4" />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+              </Button>
+              
+              {/* Labels dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 p-2 rounded-full">
+                    <Tag className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <div className="font-medium text-sm px-2 py-1.5">Labels</div>
+                  {labels.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-muted-foreground">
+                      No labels yet
+                    </div>
+                  ) : (
+                    labels.map((label) => (
+                      <DropdownMenuCheckboxItem
+                        key={label.id}
+                        checked={selectedLabelIds.includes(label.id)}
+                        onCheckedChange={() => handleLabelToggle(label.id)}
+                      >
+                        {label.name}
+                      </DropdownMenuCheckboxItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Pin button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full"
+                onClick={handleTogglePin}
+              >
+                <Pin className={`h-4 w-4 ${isPinned ? 'fill-primary' : ''}`} />
+              </Button>
+
+              {/* Share button (only for existing notes) */}
+              {note && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 p-2 rounded-full"
+                  onClick={() => setIsShareDialogOpen(true)}
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {/* Delete button (only for existing notes) */}
+              {note && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-full text-destructive"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                  
+                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this note? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
+            </div>
+            
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSave}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Note Dialog */}
+      {note && (
+        <ShareNoteDialog
+          note={note}
+          open={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+          onShareNote={handleShareNote}
+          onRemoveSharedUser={handleRemoveSharedUser}
+        />
+      )}
+    </>
   );
 };
 

@@ -14,10 +14,11 @@ interface NoteProps {
 }
 
 const Note = ({ note }: NoteProps) => {
-  const { labels, togglePin, updateNote, deleteNote } = useNotes();
+  const { labels, togglePin } = useNotes();
   const [isEditing, setIsEditing] = useState(false);
   
   const noteLabels = labels.filter(label => note.labelIds.includes(label.id));
+  const isShared = note.sharedWith && note.sharedWith.length > 0;
   
   const handleNoteClick = () => {
     setIsEditing(true);
@@ -81,7 +82,12 @@ const Note = ({ note }: NoteProps) => {
           
           <div className="flex items-center gap-1">
             {note.isPasswordProtected && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
-            {note.sharedWith && note.sharedWith.length > 0 && <Share2 className="h-3.5 w-3.5 text-muted-foreground" />}
+            {isShared && (
+              <div className="flex items-center gap-1">
+                <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{note.sharedWith!.length}</span>
+              </div>
+            )}
             <Button 
               variant="ghost" 
               size="sm" 

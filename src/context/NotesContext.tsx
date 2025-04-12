@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Note, Label, ViewMode } from '../types';
+import { Note, Label, ViewMode, SharedUser } from '../types';
 import { useAuth } from './AuthContext';
 
 interface NotesContextType {
@@ -20,6 +20,8 @@ interface NotesContextType {
   toggleLabelFilter: (labelId: string) => void;
   clearLabelFilters: () => void;
   setSearchQuery: (query: string) => void;
+  shareNote: (noteId: string, email: string, permission: 'read' | 'edit') => void;
+  removeSharedUser: (noteId: string, userId: string) => void;
 }
 
 const NotesContext = createContext<NotesContextType>({
@@ -38,7 +40,9 @@ const NotesContext = createContext<NotesContextType>({
   toggleViewMode: () => {},
   toggleLabelFilter: () => {},
   clearLabelFilters: () => {},
-  setSearchQuery: () => {}
+  setSearchQuery: () => {},
+  shareNote: () => {},
+  removeSharedUser: () => {}
 });
 
 export const useNotes = () => useContext(NotesContext);
@@ -202,6 +206,44 @@ export const NotesProvider = ({ children }: NotesProviderProps) => {
     setSelectedLabels([]);
   };
   
+  const shareNote = (noteId: string, email: string, permission: 'read' | 'edit') => {
+    if (!user) return;
+    
+    setNotes(notes.map(note => {
+      if (note.id === noteId) {
+        const sharedWith = note.sharedWith || [];
+        
+        // Generate a fake userId for demo purposes
+        const sharedUser: SharedUser = {
+          userId: `shared-${Date.now()}`,
+          email,
+          displayName: email.split('@')[0], // Simple display name from email
+          permission
+        };
+        
+        return {
+          ...note,
+          sharedWith: [...sharedWith, sharedUser],
+          updatedAt: new Date()
+        };
+      }
+      return note;
+    }));
+  };
+  
+  const removeSharedUser = (noteId: string, userId: string) => {
+    setNotes(notes.map(note => {
+      if (note.id === noteId && note.sharedWith) {
+        return {
+          ...note,
+          sharedWith: note.sharedWith.filter(user => user.userId !== userId),
+          updatedAt: new Date()
+        };
+      }
+      return note;
+    }));
+  };
+  
   return (
     <NotesContext.Provider
       value={{
@@ -220,7 +262,9 @@ export const NotesProvider = ({ children }: NotesProviderProps) => {
         toggleViewMode,
         toggleLabelFilter,
         clearLabelFilters,
-        setSearchQuery
+        setSearchQuery,
+        shareNote,
+        removeSharedUser
       }}
     >
       {children}

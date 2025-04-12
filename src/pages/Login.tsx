@@ -50,7 +50,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/40">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">AKP Note App</CardTitle>
           <CardDescription className="text-center">
             Enter your email and password to access your notes
           </CardDescription>

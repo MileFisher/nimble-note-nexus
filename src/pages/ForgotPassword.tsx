@@ -33,7 +33,7 @@ const ForgotPassword = () => {
       
       setIsSubmitted(true);
       toast({
-        title: "Success",
+        title: "Password Reset Email Sent",
         description: "If your email is registered, you will receive a password reset link."
       });
     } catch (error) {
@@ -51,7 +51,7 @@ const ForgotPassword = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/40">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Reset Password</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">AKP Note App</CardTitle>
           <CardDescription className="text-center">
             Enter your email address and we will send you a link to reset your password
           </CardDescription>

@@ -40,8 +40,8 @@ const Register = () => {
     try {
       await register(email, displayName, password);
       toast({
-        title: "Success",
-        description: "Your account has been created. Please check your email for verification."
+        title: "Account Created",
+        description: "Please check your email for a verification link to activate your account."
       });
     } catch (error) {
       toast({
@@ -63,7 +63,7 @@ const Register = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
-            Enter your information to create an account
+            Join AKP Note App to start creating and organizing your notes
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

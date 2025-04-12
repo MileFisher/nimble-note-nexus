@@ -20,6 +20,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
+        <div className="flex items-center justify-center p-2 bg-muted/20 border-b">
+          <h1 className="font-bold text-lg">AKP Note App</h1>
+        </div>
         <main className="flex-1 overflow-y-auto p-4">
           {children}
         </main>

@@ -57,7 +57,7 @@ const mockLabels: Label[] = [
 const mockNotes: Note[] = [
   {
     id: '1',
-    title: 'Welcome to NimbleNotes!',
+    title: 'Welcome to AKP Note App!',
     content: 'This is your first note. You can edit it, pin it, add labels, and more!',
     isPinned: true,
     isPasswordProtected: false,
@@ -176,7 +176,14 @@ export const NotesProvider = ({ children }: NotesProviderProps) => {
   };
   
   const deleteLabel = (id: string) => {
+    // Delete the label
     setLabels(labels.filter(label => label.id !== id));
+    
+    // Remove the label from any notes that have it
+    setNotes(notes.map(note => ({
+      ...note,
+      labelIds: note.labelIds.filter(labelId => labelId !== id)
+    })));
   };
   
   const toggleViewMode = () => {

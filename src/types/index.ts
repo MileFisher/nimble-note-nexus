@@ -33,6 +33,7 @@ export interface Note {
   labelIds: string[];
   images?: string[];
   sharedWith?: SharedUser[];
+  password?: string;
 }
 
 export interface SharedUser {
@@ -43,3 +44,4 @@ export interface SharedUser {
 }
 
 export type ViewMode = 'grid' | 'list';
+

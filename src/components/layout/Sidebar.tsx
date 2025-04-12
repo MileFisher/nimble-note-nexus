@@ -51,7 +51,7 @@ const Sidebar = () => {
     <aside className="w-64 bg-sidebar border-r h-full hidden md:flex md:flex-col">
       <div className="p-4 flex flex-col gap-2">
         <Link to="/" className="text-xl font-bold px-2 mb-4">
-          NimbleNotes
+          AKP Note App
         </Link>
         
         <Button asChild variant="ghost" className="justify-start">

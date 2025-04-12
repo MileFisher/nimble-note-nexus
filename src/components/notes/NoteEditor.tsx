@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { Note, Label } from '@/types';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { X, PlusCircle, Trash, Palette, Tag, Pin } from 'lucide-react';
+import { X, PlusCircle, Trash, Palette, Tag, Pin, Image } from 'lucide-react';
 import { useNotes } from '@/context/NotesContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -51,12 +51,14 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
   const [color, setColor] = useState(note?.color || '#FEF7CD');
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>(note?.labelIds || []);
   const [isPinned, setIsPinned] = useState(note?.isPinned || false);
+  const [images, setImages] = useState<string[]>(note?.images || []);
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   
   const titleRef = useRef<HTMLInputElement>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Focus the title input when the editor opens
   useEffect(() => {
@@ -73,7 +75,8 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
         content !== note.content ||
         color !== note.color ||
         isPinned !== note.isPinned ||
-        JSON.stringify(selectedLabelIds.sort()) !== JSON.stringify(note.labelIds.sort());
+        JSON.stringify(selectedLabelIds.sort()) !== JSON.stringify(note.labelIds.sort()) ||
+        JSON.stringify(images) !== JSON.stringify(note.images || []);
       
       setIsDirty(hasChanged);
       
@@ -94,11 +97,11 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [title, content, color, isPinned, selectedLabelIds]);
+  }, [title, content, color, isPinned, selectedLabelIds, images]);
   
   const handleSave = () => {
     // Don't save if both title and content are empty
-    if (!title.trim() && !content.trim()) {
+    if (!title.trim() && !content.trim() && images.length === 0) {
       onClose();
       return;
     }
@@ -111,6 +114,7 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
         color,
         isPinned,
         labelIds: selectedLabelIds,
+        images,
       });
       
       toast({
@@ -127,6 +131,7 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
         color,
         userId: '1', // In a real app, this would be the actual user ID
         labelIds: selectedLabelIds,
+        images,
       });
       
       toast({
@@ -166,6 +171,28 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
     });
   };
   
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          setImages(prevImages => [...prevImages, event.target.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Clear the file input to allow uploading the same file again
+    e.target.value = '';
+  };
+  
+  const handleRemoveImage = (imageToRemove: string) => {
+    setImages(images.filter(image => image !== imageToRemove));
+  };
+  
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden" style={{ backgroundColor: color }}>
@@ -186,6 +213,27 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
             placeholder="Take a note..."
             className="min-h-[200px] resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
           />
+          
+          {/* Attached images */}
+          {images.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {images.map((image, index) => (
+                <div key={index} className="relative group">
+                  <img 
+                    src={image} 
+                    alt="Note attachment" 
+                    className="h-20 w-20 object-cover rounded-md"
+                  />
+                  <button
+                    onClick={() => handleRemoveImage(image)}
+                    className="absolute top-1 right-1 bg-foreground/30 hover:bg-foreground/50 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3 text-background" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           
           {/* Selected labels */}
           {selectedLabelIds.length > 0 && (
@@ -239,6 +287,25 @@ const NoteEditor = ({ note, onClose }: NoteEditorProps) => {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            {/* Image upload button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 p-2 rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach image"
+            >
+              <Image className="h-4 w-4" />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                multiple
+                className="hidden"
+              />
+            </Button>
             
             {/* Labels dropdown */}
             <DropdownMenu>

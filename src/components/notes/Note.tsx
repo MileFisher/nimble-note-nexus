@@ -4,7 +4,7 @@ import { Note as NoteType } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pin, Tag, Lock, Share2 } from 'lucide-react';
+import { Pin, Tag, Lock, Share2, Image } from 'lucide-react';
 import { useNotes } from '@/context/NotesContext';
 import { formatDistanceToNow } from 'date-fns';
 import NoteEditor from './NoteEditor';
@@ -37,6 +37,25 @@ const Note = ({ note }: NoteProps) => {
         <CardContent className="note-card-content">
           {note.title && <h3 className="font-medium mb-2">{note.title}</h3>}
           <div className="text-sm whitespace-pre-line">{note.content}</div>
+          
+          {/* Display attached images */}
+          {note.images && note.images.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {note.images.slice(0, 3).map((image, index) => (
+                <img 
+                  key={index}
+                  src={image} 
+                  alt="Note attachment" 
+                  className="h-16 w-16 object-cover rounded-md"
+                />
+              ))}
+              {note.images.length > 3 && (
+                <div className="h-16 w-16 bg-muted/40 rounded-md flex items-center justify-center text-muted-foreground">
+                  +{note.images.length - 3}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
         
         <CardFooter className="note-card-footer">
@@ -50,6 +69,12 @@ const Note = ({ note }: NoteProps) => {
                   </Badge>
                 ))}
                 {noteLabels.length > 2 && <Badge variant="outline" className="px-1.5 py-0 text-xs">+{noteLabels.length - 2}</Badge>}
+              </div>
+            )}
+            {note.images && note.images.length > 0 && (
+              <div className="flex items-center gap-1">
+                <Image className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{note.images.length}</span>
               </div>
             )}
           </div>
